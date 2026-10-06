@@ -1,0 +1,27 @@
+"""Prometheus metrics (system-health signals). Scraped at GET /metrics."""
+from prometheus_client import Counter, Gauge, Histogram
+
+_LAT = (0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10)
+
+HTTP_REQUESTS = Counter("http_requests_total", "HTTP requests", ["method", "route", "status"])
+HTTP_LATENCY = Histogram("http_request_duration_seconds", "HTTP latency", ["route"], buckets=_LAT)
+STAGE_LATENCY = Histogram("pipeline_stage_duration_seconds", "Pipeline stage latency", ["stage"], buckets=_LAT)
+TOP_SCORE = Histogram("retrieval_top_score", "Top-1 cosine similarity", buckets=(0.05, .1, .15, .2, .3, .4, .5, .6, .7, .8, .9, 1.0))
+CONFIDENCE = Histogram("resolve_match_confidence", "Calibrated match confidence (0-1)", buckets=(.1, .2, .3, .4, .5, .6, .7, .8, .9, 1.0))
+LOW_CONFIDENCE = Counter("resolve_low_confidence_total", "Resolutions whose closest cases disagree (clarifying question asked)")
+ABSTAIN = Counter("resolve_escalations_total", "Requests escalated (no grounded answer)", ["reason"])
+UNKNOWN_CATEGORY = Counter("resolve_unknown_category_total", "Complaints not matching any known class")
+CACHE = Counter("cache_requests_total", "Resolve cache lookups", ["result"])
+RATE_LIMITED = Counter("rate_limited_total", "Requests rejected by rate limiter")
+LLM_CALLS = Counter("llm_calls_total", "LLM calls", ["model", "status"])
+LLM_LATENCY = Histogram("llm_call_duration_seconds", "LLM latency", buckets=_LAT)
+LLM_FALLBACK = Counter("llm_fallback_total", "Falls back to extractive generation", ["reason"])
+LLM_BREAKER_OPEN = Gauge("llm_circuit_breaker_open", "1 when the LLM circuit breaker is open")
+UNGROUNDED_DROPPED = Counter("ungrounded_steps_dropped_total", "LLM steps dropped for missing/invalid citations")
+GROUNDING = Histogram("resolution_grounding_score", "Lexical support of steps by cited sources", buckets=(.1, .2, .3, .4, .5, .6, .7, .8, .9, 1.0))
+FEEDBACK = Counter("feedback_total", "Agent feedback", ["helpful"])
+INGESTED = Counter("ingested_documents_total", "Ingested docs", ["kind", "outcome"])
+JOBS = Counter("ingest_jobs_total", "Background jobs", ["kind", "status"])
+INDEX_DOCS = Gauge("index_documents", "Vectors in active collection", ["doc_type"])
+UNINDEXED = Gauge("unindexed_documents", "Rows in DB not yet in active index")
+QUEUE_DEPTH = Gauge("celery_queue_depth", "Pending Celery tasks (Redis list length)")
