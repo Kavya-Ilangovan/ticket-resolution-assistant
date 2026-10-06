@@ -1,0 +1,30 @@
+groups:
+  - name: tra
+    rules:
+      - alert: HighErrorRate
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.02
+        for: 5m
+      - alert: ResolveLatencyP95High
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{route="/v1/resolve"}[5m])) by (le)) > 8
+        for: 10m
+      - alert: LLMDegraded            # provider failing -> extractive fallback or breaker open
+        expr: llm_circuit_breaker_open == 1 or sum(rate(llm_fallback_total{reason!="llm_disabled"}[10m])) > 0.2
+        for: 10m
+      - alert: EscalationRateHigh     # no grounded answer: stale index or a new problem class
+        expr: sum(rate(resolve_escalations_total[1h])) / sum(rate(http_requests_total{route="/v1/resolve"}[1h])) > 0.35
+        for: 30m
+      - alert: UnknownCategorySurge   # check /v1/admin/emerging
+        expr: sum(rate(resolve_unknown_category_total[1h])) / sum(rate(http_requests_total{route="/v1/resolve"}[1h])) > 0.25
+        for: 1h
+      - alert: RetrievalSimilarityDrop  # embedding / data drift
+        expr: histogram_quantile(0.5, sum(rate(retrieval_top_score_bucket[6h])) by (le)) < 0.8 * histogram_quantile(0.5, sum(rate(retrieval_top_score_bucket[7d] offset 1d)) by (le))
+        for: 2h
+      - alert: Backlog                # un-indexed rows or Celery queue
+        expr: unindexed_documents > 500 or celery_queue_depth > 200
+        for: 15m
+      - alert: LowConfidenceShareHigh   # closest cases disagree on many requests: ambiguous traffic, or the index/embedder drifted
+        expr: sum(rate(resolve_low_confidence_total[1h])) / sum(rate(http_requests_total{route="/v1/resolve"}[1h])) > 0.5
+        for: 1h
+      - alert: MatchConfidenceDrop      # median calibrated confidence fell versus last week: re-run evals / re-fit --calibrate
+        expr: histogram_quantile(0.5, sum(rate(resolve_match_confidence_bucket[6h])) by (le)) < 0.8 * histogram_quantile(0.5, sum(rate(resolve_match_confidence_bucket[7d] offset 1d)) by (le))
+        for: 2h
