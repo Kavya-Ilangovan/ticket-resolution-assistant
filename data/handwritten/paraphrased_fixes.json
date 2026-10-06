@@ -1,0 +1,90 @@
+{
+ "router_restart": [
+  [
+   "Please restart the router and wait two minutes.",
+   "Then check that the Wi-Fi light is green.",
+   "If it is still red, we will send a technician."
+  ],
+  [
+   "Unplug the modem for 30 seconds and plug it back in.",
+   "Make sure all the cables are firmly connected.",
+   "Contact us if the problem continues so we can replace the device."
+  ],
+  [
+   "Try power cycling your router by switching it off for a minute.",
+   "Confirm the internet light turns solid.",
+   "We can arrange an engineer visit if needed."
+  ],
+  [
+   "Reboot the modem, then test the connection on another device.",
+   "Check the ethernet cable for damage.",
+   "Escalate to field support when there is no improvement."
+  ]
+ ],
+ "double_charge": [
+  [
+   "Verify both transactions in the billing system.",
+   "Refund the duplicate payment to the original card.",
+   "Send the customer a confirmation email with the refund reference."
+  ],
+  [
+   "Check the payment history for two identical debits on the same invoice.",
+   "Reverse the second charge and return the money to the customer's card.",
+   "Confirm the refund by email and explain it takes five working days."
+  ],
+  [
+   "Look up the invoice and confirm the customer was billed twice.",
+   "Issue a refund for the extra payment.",
+   "Tell the customer when the money will arrive and share the reference number."
+  ],
+  [
+   "Review the account ledger for a duplicate debit.",
+   "Process a reversal of the duplicate amount to the original payment method.",
+   "Write to the customer to confirm the refund and timeline."
+  ]
+ ],
+ "password_reset": [
+  [
+   "Verify the customer's identity before resetting any credentials.",
+   "Ask them to hold the reset pin on the device for ten seconds.",
+   "Log in with the default admin password printed on the sticker and set a new one."
+  ],
+  [
+   "Confirm who is calling by checking account details first.",
+   "Press and hold the small reset button for 10 seconds to restore factory settings.",
+   "Sign in using the default credentials on the label and choose a new password."
+  ],
+  [
+   "Authenticate the user before giving any password help.",
+   "Factory reset the device with the pinhole button held for ten seconds.",
+   "Use the sticker login to get in and change the admin password."
+  ],
+  [
+   "Do an identity check on the caller.",
+   "Reset the unit to defaults by holding the reset pin.",
+   "Connect with the label password then create a new admin password."
+  ]
+ ],
+ "sim_activation": [
+  [
+   "Confirm the SIM serial number matches the one on the order.",
+   "Send the activation SMS from the registered phone number.",
+   "Wait fifteen minutes and restart the phone to pick up the network."
+  ],
+  [
+   "Check that the ICCID printed on the SIM card is the one in the system.",
+   "Text the activation keyword from the registered mobile number.",
+   "Give it about 15 minutes, then reboot the handset."
+  ],
+  [
+   "Match the SIM number on the card with the order record.",
+   "Activate it by sending the code by SMS from the registered line.",
+   "Allow a quarter of an hour and restart the phone."
+  ],
+  [
+   "Verify the card number against the customer's order.",
+   "Trigger activation with a text message from the registered number.",
+   "Advise the customer to reboot the phone after fifteen minutes."
+  ]
+ ]
+}
