@@ -1,0 +1,309 @@
+/* Shared cards, results, tables, status, and progress components. */
+
+.chip {
+  display:inline-block;
+  background:var(--chip);
+  color:var(--chip-ink);
+  border-radius:999px;
+  padding:.12rem .6rem;
+  font-size:.8rem;
+  margin:.1rem .15rem .1rem 0
+}
+
+.examples .chip {
+  cursor:pointer;
+  border:0;
+  font:inherit;
+  font-size:.8rem
+}
+
+.kv {
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:.25rem .8rem;
+  font-size:.92rem
+}
+
+.kv dt {
+  color:var(--muted)
+}
+
+.kv dd {
+  margin:0
+}
+
+.badge {
+  display:inline-block;
+  border-radius:6px;
+  padding:.05rem .5rem;
+  font-size:.78rem;
+  font-weight:600;
+  color:#fff;
+  background:var(--muted)
+}
+
+.sev-low {
+  background:var(--sev-low)
+}
+
+.sev-medium {
+  background:var(--sev-medium)
+}
+
+.sev-high {
+  background:var(--sev-high)
+}
+
+.sev-critical {
+  background:var(--sev-critical)
+}
+
+.neg {
+  background:var(--bad)
+}
+
+.neu {
+  background:var(--muted)
+}
+
+.pos {
+  background:var(--ok)
+}
+
+.ok {
+  background:var(--ok)
+}
+
+.warnb {
+  background:var(--warn)
+}
+
+.banner {
+  border-radius:8px;
+  padding:.6rem .8rem;
+  margin-bottom:.8rem;
+  border:1px solid
+}
+
+.banner.warn {
+  background:#fff7e6;
+  border-color:#f0c36d;
+  color:#7a4b00
+}
+
+.banner.bad {
+  background:#fdecea;
+  border-color:#f3a7a0;
+  color:#7a1b12
+}
+
+.banner.info {
+  background:var(--chip);
+  border-color:var(--line);
+  color:var(--chip-ink)
+}
+
+@media (prefers-color-scheme: dark) {
+  .banner.warn {
+    background:#3a2c0b;
+    color:#ffd58a;
+    border-color:#6b5316
+  }
+
+  .banner.bad {
+    background:#3a1512;
+    color:#ffb4ab;
+    border-color:#6b2a24
+  }
+
+}
+
+ol.steps {
+  padding-left:1.4rem;
+  margin:.5rem 0
+}
+
+ol.steps li {
+  margin:.5rem 0
+}
+
+.cite {
+  border:1px solid var(--line);
+  background:var(--chip);
+  color:var(--chip-ink);
+  border-radius:6px;
+  padding:0 .35rem;
+  margin-left:.25rem;
+  font-size:.75rem;
+  cursor:pointer;
+  font-family:ui-monospace,Consolas,monospace
+}
+
+.cite:hover {
+  border-color:var(--brand)
+}
+
+.src {
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:.6rem .7rem;
+  margin-bottom:.6rem;
+  background:var(--bg)
+}
+
+.src.hl {
+  outline:2px solid var(--brand);
+  background:var(--chip)
+}
+
+.src .head {
+  display:flex;
+  gap:.5rem;
+  align-items:center
+}
+
+.src .title {
+  font-weight:600;
+  flex:1;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap
+}
+
+.bar {
+  height:5px;
+  border-radius:3px;
+  background:var(--line);
+  overflow:hidden;
+  margin:.35rem 0
+}
+
+.bar>i {
+  display:block;
+  height:100%;
+  background:var(--brand)
+}
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:.9rem
+}
+
+th,td {
+  text-align:left;
+  padding:.4rem .5rem;
+  border-bottom:1px solid var(--line);
+  vertical-align:top
+}
+
+th {
+  color:var(--muted);
+  font-weight:600
+}
+
+.subtabs {
+  display:flex;
+  gap:.4rem;
+  margin-bottom:1rem;
+  flex-wrap:wrap
+}
+
+.subtabs button {
+  border:1px solid var(--line);
+  background:var(--panel);
+  color:var(--ink);
+  padding:.35rem .8rem;
+  border-radius:999px;
+  cursor:pointer;
+  font:inherit;
+  font-size:.88rem
+}
+
+.subtabs button[aria-selected=true] {
+  background:var(--brand);
+  color:var(--brand-ink);
+  border-color:var(--brand)
+}
+
+.progress {
+  height:8px;
+  background:var(--line);
+  border-radius:4px;
+  overflow:hidden
+}
+
+.progress>i {
+  display:block;
+  height:100%;
+  background:var(--ok);
+  width:0;
+  transition:width .3s
+}
+
+.metric {
+  font-size:1.5rem;
+  font-weight:700
+}
+
+.metric small {
+  display:block;
+  font-size:.75rem;
+  font-weight:400;
+  color:var(--muted)
+}
+
+.login {
+  max-width:420px;
+  margin:8vh auto
+}
+
+#toasts {
+  position:fixed;
+  right:1rem;
+  bottom:1rem;
+  display:flex;
+  flex-direction:column;
+  gap:.5rem;
+  z-index:20
+}
+
+.toast {
+  background:var(--ink);
+  color:var(--bg);
+  padding:.6rem .9rem;
+  border-radius:8px;
+  box-shadow:var(--shadow);
+  max-width:360px;
+  font-size:.9rem
+}
+
+.toast.err {
+  background:var(--bad);
+  color:#fff
+}
+
+.seed {
+  border:1px dashed var(--line);
+  border-radius:8px;
+  padding:.6rem;
+  margin-bottom:.6rem
+}
+
+.spinner {
+  display:inline-block;
+  width:14px;
+  height:14px;
+  border:2px solid var(--line);
+  border-top-color:var(--brand);
+  border-radius:50%;
+  animation:spin .8s linear infinite;
+  vertical-align:-2px
+}
+
+@keyframes spin {
+  to {
+    transform:rotate(360deg)
+  }
+
+}
