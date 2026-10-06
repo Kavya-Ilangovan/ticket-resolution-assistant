@@ -1,0 +1,43 @@
+services:
+  api:
+    build: { context: ., args: { EMBEDDINGS: "${EMBEDDINGS:-real}" } }
+    env_file: .env
+    environment: &common
+      DATABASE_URL: postgresql+psycopg2://tra:tra@postgres:5432/tra
+      REDIS_URL: redis://redis:6379/0
+      QDRANT_URL: http://qdrant:6333
+      CELERY_EAGER: "false"
+      EMBEDDING_BACKEND: "${EMBEDDING_BACKEND:-sentence-transformers}"
+      WEB_CONCURRENCY: "2"
+    ports: ["8000:8000"]
+    depends_on: { postgres: { condition: service_healthy }, redis: { condition: service_started }, qdrant: { condition: service_started } }
+  worker:                       # async ingestion / embedding / re-indexing
+    build: { context: ., args: { EMBEDDINGS: "${EMBEDDINGS:-real}" } }
+    command: celery -A app.worker.celery_app.celery_app worker -l info -c 2
+    env_file: .env
+    environment: *common
+    depends_on: [api, redis, postgres, qdrant]
+  beat:                         # periodic self-healing reconcile of un-indexed rows
+    build: { context: ., args: { EMBEDDINGS: "${EMBEDDINGS:-real}" } }
+    command: celery -A app.worker.celery_app.celery_app beat -l info
+    env_file: .env
+    environment: *common
+    depends_on: [redis]
+  postgres:
+    image: postgres:16-alpine
+    environment: { POSTGRES_USER: tra, POSTGRES_PASSWORD: tra, POSTGRES_DB: tra }
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U tra"], interval: 5s, retries: 10 }
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "volatile-lru"]
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    volumes: [qdrant:/qdrant/storage]
+    ports: ["6333:6333"]
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    volumes: ["./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro", "./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro"]
+    ports: ["9090:9090"]
+    profiles: ["monitoring"]
+volumes: { pgdata: {}, qdrant: {} }
