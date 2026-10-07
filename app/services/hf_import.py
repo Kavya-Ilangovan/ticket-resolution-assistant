@@ -1,18 +1,9 @@
-"""Import the public Hugging Face support-ticket dataset into the knowledge base.
+"""Import a public Hugging Face support-ticket dataset into the knowledge base.
 
-The dataset (default ``Tobi-Bueck/customer-support-tickets``) has one row per resolved ticket: subject, body, the
-agent's ``answer``, ``queue`` (department), ``priority``, ``language`` and tags. It is a general customer-support corpus
-(not telecom-specific), so it is added *alongside* the telecom data and tagged with ``origin = "hf"``.
-
-Two things are produced from it:
-
-1. **Resolved tickets** (``hf-<row>``): the agent answer is cleaned and split into resolution steps, so the RAG layer
-   can cite them exactly like telecom tickets.
-2. **KB articles** (``kb-hf-<row>``): the best-documented cases (several concrete steps, not just "we are looking into
-   it") are turned into short how-to articles, balanced across queues, near-duplicate titles removed.
-
-Everything here is pure and offline except :func:`iter_rows` (network or a local file), so it is unit-testable.
-Column names are matched case-insensitively against aliases, because dataset versions differ.
+Each row is a resolved ticket (subject, body, agent ``answer``, ``queue``, ``priority``, ``language``). Rows become
+tickets (``hf-<row>``) whose cleaned answers are split into steps, and the best-documented ones also become KB
+articles (``kb-hf-<row>``). Imported documents are tagged ``origin = "hf"``. Column names are matched
+case-insensitively against aliases, and everything except :func:`iter_rows` is pure and unit-tested offline.
 """
 from __future__ import annotations
 
@@ -36,6 +27,7 @@ ALIASES = {
     "priority": ("priority", "severity", "urgency"),
     "language": ("language", "lang"),
 }
+LANGUAGE_NAMES = {"english": "en", "german": "de", "french": "fr", "spanish": "es", "portuguese": "pt"}
 _PLACEHOLDER = re.compile(r"<[A-Za-z_ ]{2,30}>|\[[A-Za-z_ ]{2,30}\]|\{\{[^}]{1,30}\}\}")
 _NON_ACTIONABLE = re.compile(
     r"\b(?:will get back to you|looking into (?:it|this|the issue)|we are investigating|investigating (?:it|this)|"
@@ -99,12 +91,19 @@ def _queue_name(raw: object) -> str | None:
     q = clean_text(raw)
     if not q:
         return None
-    return q.replace(" and ", " & ").strip()[:80]   # "Billing and Payments" -> same class as the telecom "Billing & Payments"
+    return q.replace(" and ", " & ").strip()[:80]   # "Billing and Payments" -> same class as "Billing & Payments"
 
 
 # ------------------------------------------------------------------- plan
+def _norm_queue(raw: object) -> str:
+    return clean_text(raw).lower().replace(" and ", " & ")
+
+
 def build_plan(rows: Iterable[dict], *, lang: str | None = "en", limit: int | None = 3000, kb_limit: int = 300,
-               per_queue: int | None = None) -> Plan:
+               per_queue: int | None = None, queues: Iterable[str] | None = None, max_same_answer: int = 3) -> Plan:
+    """Clean, filter and de-duplicate rows. ``queues`` keeps only those departments (None keeps all);
+    ``max_same_answer`` caps rows sharing an identical answer, since templated answers add no retrieval signal."""
+    allowed = {_norm_queue(q) for q in queues} if queues else None
     rows = iter(rows)
     first = next(rows, None)
     drops: Counter = Counter()
@@ -117,15 +116,19 @@ def build_plan(rows: Iterable[dict], *, lang: str | None = "en", limit: int | No
                          f"Expected one of {ALIASES}")
     get = lambda r, k: r.get(cols[k]) if cols[k] else None  # noqa: E731
 
-    seen, per_q, cands, tickets = set(), Counter(), [], []
+    seen, per_q, answers, cands, tickets = set(), Counter(), Counter(), [], []
     seen_rows = 0
     for i, r in enumerate([first, *rows]):
         seen_rows += 1
         if limit and len(tickets) >= limit:
             break
         row_lang = str(get(r, "language") or "").strip().lower()
+        row_lang = LANGUAGE_NAMES.get(row_lang, row_lang)
         if lang and row_lang and row_lang != lang.lower():
             drops["other_language"] += 1
+            continue
+        if allowed is not None and _norm_queue(get(r, "queue")) not in allowed:
+            drops["queue_filtered"] += 1
             continue
         body, subject = clean_text(get(r, "body")), clean_text(get(r, "subject"))
         steps = answer_steps(get(r, "answer"))
@@ -139,11 +142,16 @@ def build_plan(rows: Iterable[dict], *, lang: str | None = "en", limit: int | No
         if key in seen:
             drops["duplicate"] += 1
             continue
+        answer_key = content_hash(*steps)
+        if answers[answer_key] >= max_same_answer:
+            drops["repeated_answer"] += 1
+            continue
         queue = _queue_name(get(r, "queue"))
         if per_queue and queue and per_q[queue] >= per_queue:
             drops["queue_cap"] += 1
             continue
         seen.add(key)
+        answers[answer_key] += 1
         per_q[queue] += 1
         sev = _PRIORITY.get(str(get(r, "priority") or "").strip().lower())
         tickets.append(TicketIn(external_id=f"hf-{i}", subject=subject[:500], body=body[:9000], category=queue, severity=sev,

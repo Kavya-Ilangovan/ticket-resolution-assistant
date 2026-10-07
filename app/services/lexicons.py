@@ -1,38 +1,29 @@
-"""Word lists and regex cues used by the complaint analyzer (``analyzer.py``).
+"""Generic word lists and regex cues for the complaint analyzer.
 
-Kept apart from the logic so they can be read, reviewed and extended without touching code. Every table is plain data;
-``any_of`` just joins alternatives into one regex so each cue reads as a list of phrases instead of one long pattern.
+Domain-specific vocabulary (products, extra outage phrases) lives in a JSON profile (``app/domains/*.json``,
+selected with ``DOMAIN_PROFILE``), so the same code serves any support domain.
 """
 from __future__ import annotations
 
+import json
 import re
+from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
+
+DOMAINS_DIR = Path(__file__).resolve().parent.parent / "domains"
 
 
 def any_of(*alternatives: str) -> str:
     return "|".join(alternatives)
 
 
-# ------------------------------------------------------------------ product (regex per product)
-PRODUCT_LEXICON: dict[str, list[str]] = {
-    "Fiber Broadband": [r"broadband", r"fib(?:er|re)", r"\bftth\b", r"home internet", r"\binternet\b", r"wi-?fi", r"\bwifi\b",
-                        r"\bont\b", r"\blos\b", r"speed", r"\bping\b", r"latency", r"\bline\b"],
-    "Router/Modem": [r"router", r"modem", r"\bgateway\b", r"firmware", r"admin (?:page|password|panel)", r"\bssid\b",
-                     r"factory reset"],
-    "Mobile Postpaid": [r"postpaid", r"post-paid", r"monthly (?:plan|bill)", r"my (?:mobile )?bill", r"roaming"],
-    "Mobile Prepaid": [r"prepaid", r"pre-paid", r"top-?up", r"recharge", r"\bpack\b"],
-    "Mobile (SIM/Network)": [r"\bsim\b", r"\bpuk\b", r"\bsignal\b", r"\bnetwork coverage\b", r"\bcalls?\b", r"\bsms\b",
-                             r"\bmobile data\b", r"\b[345]g\b", r"\blte\b", r"number port", r"\bporting\b", r"\bmnp\b"],
-    "IPTV": [r"\biptv\b", r"set-?top", r"channels?", r"\btv\b", r"streaming", r"\bdecoder\b", r"on-?demand"],
-    "5G Home Internet": [r"5g (?:home|fwa|router|cpe|outdoor|home internet)", r"fixed wireless", r"\bfwa\b", r"5g home"],
-}
-
 # ------------------------------------------------------------------ severity: (pattern, weight, signal name)
-# Scores add up; thresholds live in analyzer.detect_severity. Weights are judgement calls, not fitted values.
+# Scores add up; thresholds live in analyzer.detect_severity. Weights are hand-set, not fitted.
 SEVERITY_CUES: list[tuple[str, float, str]] = [
     (any_of(r"\b(?:completely|totally|fully|entirely) (?:down|dead|offline|cut off)\b",
-            r"\bno (?:service|internet|signal|connection|dial ?tone) at all\b",
-            r"\bemergency\b",
-            r"\bcan'?t (?:call|reach) (?:emergency|112|911|100)\b"),
+            r"\bno (?:service|access|connection) at all\b",
+            r"\bemergency\b"),
      2.0, "outage_language"),
     (r"\b(?:" + any_of(r"work(?:ing)? from home", r"wfh", r"home office", r"my business", r"client calls?",
                        r"customers? (?:are|can'?t)", r"online classes?", r"exam", r"remote work", r"costing me",
@@ -56,7 +47,6 @@ SEVERITY_CUES: list[tuple[str, float, str]] = [
             r"port(?:ing)? out"),
      0.7, "churn_or_escalation_threat"),
 ]
-# calm, informational wording lowers severity
 SEVERITY_LOW_CUES = (r"\b(?:how (?:do|can) i|would like to|wondering|just (?:asking|checking)|question about|"
                      r"want to (?:change|know)|no rush|when (?:you|you've) (?:get|have) a chance)\b")
 
@@ -82,12 +72,32 @@ INTENT_RULES: list[tuple[str, str]] = [
 ]
 
 
-def compile_all():
-    """Compile the regex tables once (case-insensitive)."""
+@dataclass(frozen=True)
+class Domain:
+    name: str
+    products: dict[str, list[re.Pattern]]
+    product_boost: dict[str, float]
+    severity: list[tuple[re.Pattern, float, str]]
+    low_severity: re.Pattern
+    intents: list[tuple[str, re.Pattern]]
+    hf_queues: tuple[str, ...] = ()   # public-dataset queues worth importing for this domain
+
+
+@lru_cache
+def load_domain(profile: str = "telecom") -> Domain:
+    """Load ``profile`` (a name in app/domains or a path to a JSON file) and merge it with the generic cues."""
+    path = Path(profile) if profile.endswith(".json") else DOMAINS_DIR / f"{profile}.json"
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    cues = list(SEVERITY_CUES)
+    if raw.get("outage_cues"):
+        cues.append((any_of(*raw["outage_cues"]), 2.0, "outage_language"))
     flags = re.I
-    return (
-        {p: [re.compile(x, flags) for x in xs] for p, xs in PRODUCT_LEXICON.items()},
-        [(re.compile(p, flags), w, name) for p, w, name in SEVERITY_CUES],
-        re.compile(SEVERITY_LOW_CUES, flags),
-        [(label, re.compile(p, flags)) for label, p in INTENT_RULES],
+    return Domain(
+        name=raw.get("name", "support desk"),
+        products={p: [re.compile(x, flags) for x in xs] for p, xs in raw.get("products", {}).items()},
+        product_boost=raw.get("product_boost", {}),
+        severity=[(re.compile(p, flags), w, n) for p, w, n in cues],
+        low_severity=re.compile(SEVERITY_LOW_CUES, flags),
+        intents=[(label, re.compile(p, flags)) for label, p in INTENT_RULES],
+        hf_queues=tuple(raw.get("hf_queues", ())),
     )

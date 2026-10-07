@@ -36,7 +36,7 @@ async function adminOverview(root) {
     btn.addEventListener("click", () => guarded(btn, async () => {
       const j = await api("/v1/admin/seed-demo", { method: "POST" }); btn.textContent = "Loading…"; await pollJob(j.job_id); toast("Demo data loaded"); renderShell();
     }));
-    root.append(el("div", { class: "banner info" }, "The knowledge base is empty. ", btn, el("span", { class: "muted small" }, " (528 synthetic telecom tickets + 24 KB articles)")));
+    root.append(el("div", { class: "banner info" }, "The knowledge base is empty. ", btn, el("span", { class: "muted small" }, " (bundled synthetic tickets and KB articles)")));
   }
   root.append(el("div", { class: "grid g4" }, metric("tickets in DB", stats.tickets_db), metric("KB articles in DB", stats.kb_db),
     metric("ticket vectors", stats.vectors_ticket), metric("KB vectors", stats.vectors_kb)));

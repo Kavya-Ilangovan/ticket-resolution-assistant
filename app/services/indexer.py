@@ -1,9 +1,4 @@
-"""Index lifecycle: which Qdrant collection + embedder is live, and zero-downtime re-indexing.
-
-Serving always embeds queries with the embedder recorded for the *active* collection, so changing the
-embedding model is a blue/green operation: build a new collection in the background, catch up, then flip
-the pointer atomically (one row in `index_state`).
-"""
+"""Index lifecycle: the active collection and embedder, and blue/green re-indexing (build, catch up, flip one pointer)."""
 from __future__ import annotations
 
 import logging

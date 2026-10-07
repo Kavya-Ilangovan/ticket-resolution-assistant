@@ -17,9 +17,7 @@ def tokenize(text: str, *, drop_stop: bool = True) -> list[str]:
     return [t for t in toks if not (drop_stop and t in STOPWORDS)]
 
 
-# Words that say "something is wrong" but not *what*. They match every complaint, so on short queries such as
-# "wifi not working" they drag in password resets, SIM faults and billing disputes. They are ignored when building
-# retrieval vectors (never in the grounding checks, where every word counts).
+# Words that say something is wrong but not what; ignored when building retrieval vectors (not in grounding checks).
 GENERIC_TERMS = frozenset(
     "working work works worked issue issues problem problems help need needs want wants since still tried trying try "
     "get gets getting got please kindly thanks thank urgent urgently asap support team customer service sir madam".split()

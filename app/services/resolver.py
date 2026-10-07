@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.core import metrics as m
 from app.core.context import Context
 from app.core.pii import redact
+from app.core.reranker import load_reranker, rerank_hits
 from app.core.text import content_hash, strip_boilerplate
 from app.db.models import QueryLog
 from app.schemas import Analysis, ResolveOut, SearchOut, Source
@@ -31,7 +32,7 @@ def resolve(ctx: Context, db: Session, text: str, user_id: str, *, top_k_tickets
     info = indexer.get_active(ctx, db)
     kt, kk = top_k_tickets or s.top_k_tickets, s.top_k_kb if top_k_kb is None else top_k_kb
 
-    ckey = "resolve:v4:" + content_hash(info.collection, clean.lower(), kt, kk, s.llm_enabled, s.llm_analysis)
+    ckey = "resolve:v5:" + content_hash(info.collection, clean.lower(), kt, kk, s.llm_enabled, s.llm_analysis, s.reranker)
     if use_cache and (hit := ctx.kv.get(ckey)):
         m.CACHE.labels("hit").inc()
         data = json.loads(hit)
@@ -42,6 +43,7 @@ def resolve(ctx: Context, db: Session, text: str, user_id: str, *, top_k_tickets
     m.CACHE.labels("miss").inc()
 
     tickets, kb = retriever.retrieve(ctx, info, clean, knn_k=max(s.knn_k, kt), kb_k=kk)
+    tickets = rerank_hits(load_reranker(s.reranker, s.reranker_model), clean, tickets)
 
     t0 = time.perf_counter()
     cats = taxonomy.active_categories(db)
@@ -51,8 +53,7 @@ def resolve(ctx: Context, db: Session, text: str, user_id: str, *, top_k_tickets
         m.UNKNOWN_CATEGORY.inc()
 
     cat = analysis.category if analysis.is_known_category else None
-    # Confidence is judged on every candidate above the abstain floor (disagreement among them is the signal), but only
-    # results close to the best match are *shown*; the dominant fix group is always shown.
+    # confidence uses every candidate above the abstain floor; only results near the best match are shown
     cand_t = _above_floor(retriever.rerank(tickets, cat, analysis.product)[:kt], "ticket", s)
     kb_ranked = _on_topic(retriever.rerank(kb, cat, analysis.product)[:kk], "kb", s)
     top_score = max([h.score for h in tickets + kb], default=0.0)
@@ -82,7 +83,7 @@ def resolve(ctx: Context, db: Session, text: str, user_id: str, *, top_k_tickets
     return out
 
 
-REL_KEEP = 0.5   # keep a hit only if its relevance is at least this fraction of the best hit of the same type
+REL_KEEP = 0.5   # show a hit only if its relevance is at least this fraction of the best one
 
 
 def _above_floor(hits: list, doc_type: str, s) -> list:

@@ -111,7 +111,7 @@ class Source(BaseModel):
     title: str
     score: float = Field(..., description="Raw similarity (cosine); not comparable across embedders - use `relevance`")
     relevance: float = Field(0.0, description="0-1 match strength, calibrated to the embedder (0 = at the abstain floor)")
-    origin: Literal["telecom", "hf"] = Field("telecom", description="Where the document came from (hf = Hugging Face import)")
+    origin: Literal["seed", "hf"] = Field("seed", description="Where the document came from (hf = Hugging Face import)")
     category: str | None = None
     product: str | None = None
     snippet: str = ""

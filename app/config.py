@@ -62,24 +62,28 @@ class Settings(BaseSettings):
     llm_max_tokens: int = 900
     llm_analysis: bool = False      # also use the LLM for complaint parsing (extra cost/latency)
 
+    # --- Domain -----------------------------------------------------------
+    domain_profile: str = "telecom"   # name in app/domains/ or a path to a profile JSON (products, outage cues)
+
     # --- Retrieval / RAG --------------------------------------------------
     top_k_tickets: int = 5
     top_k_kb: int = 3
     knn_k: int = 10
+    reranker: Literal["none", "cross-encoder"] = "none"   # second-stage reordering of ticket candidates
+    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     hybrid_search: bool = True   # dense + sparse(BM25-style) fused with RRF
-    # Cosine-similarity thresholds are embedder specific. None => sensible default per backend.
-    abstain_threshold: float | None = None   # below this top-1 score we escalate instead of answering
-    novelty_threshold: float | None = None   # below this => category "unknown" (possible new class)
+    # similarity thresholds are embedder specific; None picks a default per backend
+    abstain_threshold: float | None = None   # below this top-1 score, escalate instead of answering
+    novelty_threshold: float | None = None   # below this, category is "unknown" (possible new class)
     redact_pii: bool = True
-    # Match-confidence calibration (see services/confidence.py). slope/bias map "do the closest cases agree on one fix?"
-    # to a probability; fitted on the offline embedder, so re-fit per embedder:  python -m evals.run_all --calibrate
-    strong_similarity: float | None = None   # similarity that counts as a "strong" match (None => per-backend default)
+    # confidence calibration (services/confidence.py); re-fit per embedder: python -m evals.run_all --calibrate
+    strong_similarity: float | None = None   # similarity that counts as a strong match
     conf_slope: float = 5.26
     conf_bias: float = -3.13
-    cat_conf_slope: float = 10.94            # calibrates the raw kNN category score to P(category correct)
+    cat_conf_slope: float = 10.94            # raw kNN score -> P(category correct)
     cat_conf_bias: float = -4.21
-    min_confidence: float = 0.10             # below this the answer is not shown: escalate to Tier-2 (off-topic text lands ~0.05)
-    fix_link_threshold: float | None = None  # step-text cosine at which two cases count as "the same fix" (None => per-backend default)
+    min_confidence: float = 0.10             # below this, escalate to Tier-2
+    fix_link_threshold: float | None = None  # step-text cosine at which two cases are "the same fix"
     conf_high: float = 0.70                  # >= high   => "high" confidence
     conf_medium: float = 0.40                # >= medium => "medium", otherwise "low"
 
@@ -88,20 +92,19 @@ class Settings(BaseSettings):
     jwt_secret: str = "change-me-in-prod"
     firebase_project_id: str | None = None
     firebase_credentials_file: str | None = None
-    firebase_web_config: str | None = None   # Firebase *web* app config (JSON or the JS snippet), browser UI only
-    firebase_web_config_file: str | None = None   # ...or a path to a file containing it (handles multi-line pastes)
-    firebase_api_key: str | None = None      # ...or the individual values (simplest in a .env file)
+    firebase_web_config: str | None = None   # web app config (JSON or JS snippet) for the browser UI
+    firebase_web_config_file: str | None = None
+    firebase_api_key: str | None = None      # or the individual values
     firebase_auth_domain: str | None = None  # defaults to <project id>.firebaseapp.com
     firebase_app_id: str | None = None
-    # RBAC for Google / Firebase sign-ins (they carry no `role` claim unless you set one with the Admin SDK):
-    admin_emails: str = ""                   # comma-separated; a *verified* email on this list becomes admin
-    allowed_email_domains: str = ""          # comma-separated, e.g. "example.com"; empty = any domain
-    default_role: Literal["agent", "admin"] = "agent"   # role for everyone else (keep "agent")
+    admin_emails: str = ""                   # comma-separated; verified emails listed here become admin
+    allowed_email_domains: str = ""          # comma-separated; empty = any domain
+    default_role: Literal["agent", "admin"] = "agent"
     rate_limit_per_minute: int = 60
     cache_ttl_s: int = 600
 
     # --- Celery -----------------------------------------------------------
-    celery_eager: bool = True   # run tasks inline (dev/tests). docker-compose sets false.
+    celery_eager: bool = True   # run tasks inline (docker-compose sets false)
 
     @property
     def llm_enabled(self) -> bool:

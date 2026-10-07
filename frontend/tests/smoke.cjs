@@ -29,7 +29,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   check("admin overview + empty-KB banner", await waitFor(() => btn("Load demo data")));
   btn("Load demo data").click();
   check("demo data loaded (toast)", await waitFor(() => /Demo data loaded/.test($("#toasts").textContent), 60000));
-  check("metrics show ticket counts", await waitFor(() => /528/.test($("main").textContent)));
+  check("metrics show ticket counts", await waitFor(() => /\d{3}/.test($("main").textContent)));
 
   // Resolve the brief's example complaint
   btn("Resolve").click();

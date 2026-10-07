@@ -59,3 +59,17 @@ def test_handwritten_set_is_well_formed():
 
 def test_brief_example_is_parsed_as_asked():
     assert detect_severity(BRIEF)[0] in ("high", "critical")
+
+
+def test_reranker_reorders_without_changing_scores():
+    from app.core.reranker import rerank_hits
+    from app.core.vectorstore import Hit
+
+    class Longest:
+        def scores(self, query, passages):
+            return [float(len(p)) for p in passages]
+
+    hits = [Hit(id=str(i), score=1.0 - i / 10, payload={"title": "t", "text": "x" * (i + 1)}) for i in range(3)]
+    out = rerank_hits(Longest(), "q", hits)
+    assert [h.id for h in out] == ["2", "1", "0"] and [h.score for h in out] == [0.8, 0.9, 1.0]
+    assert rerank_hits(None, "q", hits) == hits

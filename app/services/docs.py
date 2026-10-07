@@ -9,8 +9,8 @@ from app.db.models import KBArticle, Ticket
 
 
 def origin_of(external_id: str) -> str:
-    """Hugging Face imports are namespaced (`hf-...`, `kb-hf-...`); everything else is the telecom data."""
-    return "hf" if external_id.startswith(("hf-", "kb-hf-")) else "telecom"
+    """Hugging Face imports are namespaced (`hf-...`, `kb-hf-...`); everything else is bundled seed data."""
+    return "hf" if external_id.startswith(("hf-", "kb-hf-")) else "seed"
 
 
 def ticket_embed_text(t: Ticket) -> str:

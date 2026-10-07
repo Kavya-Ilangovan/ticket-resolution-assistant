@@ -1,9 +1,8 @@
 """Grounded resolution drafting with citations.
 
-Primary path : LLM (OpenRouter) gets numbered sources and must cite them per step (JSON output).
-Validation   : unknown citations stripped; steps with no valid citation are dropped; low lexical support flagged.
-Fallback path: deterministic extractive composer built from historical resolution steps (no LLM needed).
-Abstention   : if the best source is below the threshold we escalate instead of inventing an answer.
+LLM path: numbered sources in, JSON steps with per-step citations out; unknown citations are stripped and steps
+without a valid citation dropped. Fallback: a deterministic extractive composer over historical resolution steps.
+If the best source is below the abstain threshold, the answer escalates instead of guessing.
 """
 from __future__ import annotations
 
@@ -17,6 +16,7 @@ from app.core.text import extract_steps, jaccard, strip_boilerplate, token_overl
 from app.core.vectorstore import Hit
 from app.schemas import Analysis, Resolution, Source, Step
 from app.services import confidence as conf
+from app.services import lexicons
 from app.services.docs import origin_of
 
 log = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ def _source_text(h: Hit) -> str:
     return (p.get("title") or "") + "\n" + (p.get("text") or "")
 
 
-def _prompt(text: str, analysis: Analysis, by_id: dict[str, Hit], low_confidence: bool = False) -> list[dict]:
+def _prompt(text: str, analysis: Analysis, by_id: dict[str, Hit], domain_name: str, low_confidence: bool = False) -> list[dict]:
     blocks = []
     for sid, h in by_id.items():
         p = h.payload
@@ -56,7 +56,7 @@ def _prompt(text: str, analysis: Analysis, by_id: dict[str, Hit], low_confidence
         else:
             blocks.append(f"[{sid}] KB ARTICLE \"{p.get('title')}\" (similarity {h.score:.2f})\n{(p.get('text') or '')[:900]}")
     system = (
-        "You are a resolution assistant for a telecom support desk. Draft a step-by-step resolution for the agent "
+        f"You are a resolution assistant for a {domain_name}. Draft a step-by-step resolution for the agent "
         "using ONLY the numbered sources. Rules: (1) every step must cite one or more source ids that directly "
         "support it; (2) do not add steps, numbers, tools or policies that are not in the sources; (3) prefer "
         "steps that recur across sources and order them logically (diagnose -> fix -> verify -> escalate); "
@@ -95,11 +95,11 @@ def _extractive(by_id: dict[str, Hit], category: str | None = None, max_steps: i
     """Merge the resolution steps of the best sources; de-duplicate near-identical steps and cite every source
     that contributed (or repeated) a step. Ordering follows the highest-ranked source first."""
     cands: list[dict] = []
-    if focus:  # draft from the dominant fix group (+ KB of the same class), not from every neighbour in the category
+    if focus:  # draft from the dominant fix group, not every neighbour
         lead = by_id[focus[0]].payload.get("category")
         keep = {k: h for k, h in by_id.items() if k in focus or (h.payload["doc_type"] == "kb" and h.payload.get("category") == lead)}
         by_id = keep or by_id
-    elif category:  # don't mix in procedures from other problem classes that merely share boilerplate wording
+    elif category:  # avoid mixing in other classes that merely share boilerplate wording
         same = {k: h for k, h in by_id.items() if h.payload.get("category") == category}
         by_id = same or by_id
     for sid, h in by_id.items():
@@ -151,7 +151,7 @@ def generate(ctx: Context, text: str, analysis: Analysis, tickets: list[Hit], kb
     if ctx.llm.enabled:
         t0 = time.perf_counter()
         try:
-            out = ctx.llm.chat_json(_prompt(text, analysis, by_id, low_confidence))
+            out = ctx.llm.chat_json(_prompt(text, analysis, by_id, lexicons.load_domain(s.domain_profile).name, low_confidence))
             steps, summary, escalate, reason = _validate_llm(out, by_id)
             mode = "llm"
             if not steps and not escalate:

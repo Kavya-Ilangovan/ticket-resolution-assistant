@@ -314,7 +314,7 @@ def list_jobs(limit: int = 20, user: User = admin, db: Session = Depends(get_db)
 
 @app.post("/v1/admin/seed-demo", response_model=sc.JobOut, status_code=202, tags=["admin"])
 def seed_demo(novel: bool = False, user: User = admin, db: Session = Depends(get_db)):
-    """Load the bundled synthetic telecom data (528 tickets + 24 KB articles; `novel=true` adds the 5G class)."""
+    """Load the bundled synthetic data (`novel=true` also loads the held-out 5G class)."""
     j = _job(db, "seed_demo", 0)
     tasks.seed_demo_task.delay(j.id, novel)
     db.refresh(j)

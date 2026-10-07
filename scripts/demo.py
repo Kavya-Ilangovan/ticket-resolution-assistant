@@ -1,10 +1,7 @@
-"""One-command demo: no server, no keys, no Docker.
+"""One-command demo (no server, keys or Docker).
 
-    python -m scripts.demo                 # the brief's example, a billing case, a vague one and an off-topic one
-    python -m scripts.demo "my text here"  # your own complaint
-
-Builds an in-memory stack (SQLite + embedded Qdrant + offline embedder), seeds the demo data and prints what an agent
-would see: parsed fields, the sources used, the cited resolution steps and, when the system is unsure, an escalation.
+    python -m scripts.demo                  # sample complaints: a fault, a billing case, a vague one, an off-topic one
+    python -m scripts.demo "my text here"   # your own complaint
 """
 from __future__ import annotations
 
