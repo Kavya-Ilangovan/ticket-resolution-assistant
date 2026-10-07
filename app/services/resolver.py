@@ -42,7 +42,7 @@ def resolve(ctx: Context, db: Session, text: str, user_id: str, *, top_k_tickets
         return out
     m.CACHE.labels("miss").inc()
 
-    candidate_k = max(s.knn_k, kt * 3, 15)
+    candidate_k = max(s.knn_k, kt)
     tickets, kb = retriever.retrieve(
         ctx, info, clean,
         knn_k=candidate_k,
