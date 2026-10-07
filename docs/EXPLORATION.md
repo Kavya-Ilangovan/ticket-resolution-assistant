@@ -1,7 +1,7 @@
 # Exploration (EDA)
 
 Data: **780** synthetic resolved tickets, **36** underlying issues,
-**12** categories, 36 KB articles, 144 held-out eval complaints, 8 out-of-domain probes and a
+**12** categories, 36 KB articles, 96 held-out eval complaints, 8 out-of-domain probes and a
 held-out *unseen* class ("5G Home Internet"). 
 
 **How the data is built** (`data/generate_synthetic.py`, seeded). The public datasets are not telecom-specific and have no

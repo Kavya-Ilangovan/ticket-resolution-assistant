@@ -268,7 +268,7 @@ Authenticated with a bearer token; roles are `agent` and `admin`. Interactive do
 
 ## 9. Testing and evaluation
 
-### 10.1 Commands
+### 9.1 Commands
 
 ```bash
 pytest -q                                   # unit, integration and API tests
@@ -286,25 +286,35 @@ cd frontend/tests && npm install && node smoke.cjs http://localhost:8000
 
 Generated outputs (`evals/reports/report.md`, `docs/EXPLORATION.md`, `docs/img/`, `data/synthetic/`) are produced by these commands and are not committed.
 
-### 10.2 Results
+### 9.2 Results
 
-Measured on a clean run with the offline `hashing` embedder: **48 of 48 tests pass; 36 of 36 evaluation quality gates pass.**
+Measured on a clean run with the offline `hashing` embedder: **47 of 47 tests pass; 36 of 36 evaluation quality gates pass.**
 
 | Evaluation set | Metric | Result |
 |---|---|---|
-| 36 hand-written complaints | Recall@1, hybrid vs keyword baseline | 0.889 vs 0.861 |
-| | Recall@5, hybrid vs keyword baseline | 0.944 vs 0.917 |
+| 96 held-out synthetic complaints | Recall@1 / Recall@5 / MRR (hybrid) | 0.323 / 0.604 / 0.440 |
+| | nDCG@5 (hybrid) | 0.312 |
+| 36 hand-written complaints | Recall@1 / Recall@5 / MRR (hybrid) | 0.861 / 0.972 / 0.903 |
+| | nDCG@5 (hybrid) | 0.845 |
 | | Category / product accuracy | 0.861 / 0.917 |
-| | Step precision / gold-step recall | 0.845 / 0.911 |
+| | Step precision / gold-step recall | 0.821 / 0.883 |
 | 29 short, vague queries | Top-1 on topic | 0.862 |
 | | Answers free of unrelated departments | 0.862 |
-| | Precision@5 | 0.779 |
+| | Precision@5 | 0.739 |
 | 132 complaints (confidence honesty) | Match-confidence calibration error | 0.060 |
-| | Precision when confidence is *high* / *low* | 0.90 / 0.21 |
-| 96 adversarial synthetic complaints | Recall@5, hybrid vs keyword baseline | 0.583 vs 0.562 |
-| | Off-topic queries escalated | 0.875 |
+| | Category calibration error | 0.041 |
+| | Precision when confidence is *high* / *low* | 0.92 / 0.19 |
+| | Monotonic calibration | True |
+| | OOD mean confidence | 0.195 |
+| 96 held-out synthetic complaints | KB recall@3 | 0.750 |
+| | Category / product accuracy | 0.479 / 0.552 |
+| | Sentiment accuracy | 0.729 |
 | | Citation validity | 1.00 |
-| Latency (in-process, no LLM) | p50 / p95 | about 44 ms / 68 ms (hardware dependent) |
+| | Step precision / gold-step recall | 0.338 / 0.362 |
+| | OOD complaints escalated | 0.875 |
+| | Novel-class accuracy after addition | 0.333 |
+| Latency (in-process, no LLM) | p50 / p95 | 70.7 ms / 93.0 ms |
+| Throughput | 1-thread | 13.6 requests/s |
 
 The evaluation methodology, metric definitions and online health alerts are described in [`docs/EVALS.md`](docs/EVALS.md).
 
@@ -324,7 +334,7 @@ The evaluation methodology, metric definitions and online health alerts are desc
 
 ## 11. Limitations and known issues
 
-* Confidence constants were fitted on the offline embedder and a limited number of complaints; the *medium* confidence band is over-confident (stated about 0.55, correct about 0.29). Re-fit with `--calibrate` for any other embedder.
+* Confidence constants were fitted on the offline embedder and a limited number of complaints; the *medium* confidence band remains less reliable than the high-confidence band (stated about 0.56, correct about 0.35). Re-fit with `--calibrate` for any other embedder.
 * An off-topic query that genuinely resembles an indexed ticket (for example, a streaming-service password reset versus router-password tickets) can still be answered with high confidence.
 * The Hugging Face dataset is a general support corpus, not telecom-specific.
 
