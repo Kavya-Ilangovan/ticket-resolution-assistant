@@ -42,7 +42,12 @@ def resolve(ctx: Context, db: Session, text: str, user_id: str, *, top_k_tickets
         return out
     m.CACHE.labels("miss").inc()
 
-    tickets, kb = retriever.retrieve(ctx, info, clean, knn_k=max(s.knn_k, kt), kb_k=kk)
+    candidate_k = max(s.knn_k, kt * 3, 15)
+    tickets, kb = retriever.retrieve(
+        ctx, info, clean,
+        knn_k=candidate_k,
+        kb_k=max(kk, 5)
+    )
     tickets = rerank_hits(load_reranker(s.reranker, s.reranker_model), clean, tickets)
 
     t0 = time.perf_counter()
