@@ -1,0 +1,196 @@
+{
+  "note": "Real output of the offline stack (hashing embedder, extractive drafting, no LLM key).",
+  "complaint": "My broadband drops every evening around 8 and I've already restarted the router twice, I work from home and this is costing me",
+  "response": {
+    "request_id": "sample",
+    "query_id": "sample",
+    "analysis": {
+      "category": "Broadband Connectivity",
+      "category_confidence": 0.485,
+      "is_known_category": true,
+      "intent": "fault_report",
+      "product": "Fiber Broadband",
+      "product_confidence": 1.0,
+      "severity": "high",
+      "severity_signals": [
+        "business_or_work_impact",
+        "repeated_attempts",
+        "persistent_issue"
+      ],
+      "sentiment": "negative",
+      "sentiment_score": -0.357,
+      "method": "heuristic+knn"
+    },
+    "sources": [
+      {
+        "id": "T1",
+        "doc_type": "ticket",
+        "external_id": "tkt-bb_evening_drops-010",
+        "title": "My broadband drops every evening around 8. The light on",
+        "score": 0.4501,
+        "relevance": 1.0,
+        "origin": "seed",
+        "category": "Broadband Connectivity",
+        "product": "Fiber Broadband",
+        "snippet": "My broadband drops every evening around 8. The light on the fibre box stays green but pages stop loading. I tried again several times and it didn't help."
+      },
+      {
+        "id": "T2",
+        "doc_type": "ticket",
+        "external_id": "tkt-bb_evening_drops-012",
+        "title": "My broadband drops every evening around 8. The light on the fibre box stays gree",
+        "score": 0.4446,
+        "relevance": 0.98,
+        "origin": "seed",
+        "category": "Broadband Connectivity",
+        "product": "Fiber Broadband",
+        "snippet": "My broadband drops every evening around 8. The light on the fibre box stays green but pages stop loading. I already contacted you about this once. This has been going on for two weeks now. You can reach me at [EMAIL]"
+      },
+      {
+        "id": "T3",
+        "doc_type": "ticket",
+        "external_id": "tkt-tv_buffering-010",
+        "title": "TV playback stutters badly during matches. I've already restarted the device",
+        "score": 0.4487,
+        "relevance": 0.995,
+        "origin": "seed",
+        "category": "TV & Streaming",
+        "product": "IPTV",
+        "snippet": "TV playback stutters badly during matches. I've already restarted the device twice. I work from home and this is costing me. It started since last Monday."
+      },
+      {
+        "id": "T4",
+        "doc_type": "ticket",
+        "external_id": "tkt-bb_no_internet-000",
+        "title": "The whole line is down and I can't get online. There is a red light blinking on",
+        "score": 0.3648,
+        "relevance": 0.685,
+        "origin": "seed",
+        "category": "Broadband Connectivity",
+        "product": "Fiber Broadband",
+        "snippet": "The whole line is down and I can't get online. There is a red light blinking on the fibre box. I've already restarted the device twice."
+      },
+      {
+        "id": "T5",
+        "doc_type": "ticket",
+        "external_id": "tkt-rtr_reboots-014",
+        "title": "The router gets very hot and then turns off. The router feels hot to the touch a",
+        "score": 0.4377,
+        "relevance": 0.954,
+        "origin": "seed",
+        "category": "Router & Hardware",
+        "product": "Router/Modem",
+        "snippet": "The router gets very hot and then turns off. The router feels hot to the touch and all the lights blink. I've already restarted the device twice. Can you look into it?"
+      },
+      {
+        "id": "K1",
+        "doc_type": "kb",
+        "external_id": "kb-bb_evening_drops",
+        "title": "Intermittent disconnections on fibre broadband during peak hours",
+        "score": 0.1532,
+        "relevance": 0.468,
+        "origin": "seed",
+        "category": "Broadband Connectivity",
+        "product": "Fiber Broadband",
+        "snippet": "re-seat the fibre connector if optical power is outside -8 to -27 dBm. 6. Call back after 48 hours to confirm the drops have stopped. Escalation: if the problem persists after the steps above, raise a Tier-2 ticket referencing bb_evening_dr"
+      },
+      {
+        "id": "K2",
+        "doc_type": "kb",
+        "external_id": "kb-rtr_weak_wifi",
+        "title": "Wi-Fi coverage and dead zones",
+        "score": 0.1801,
+        "relevance": 0.667,
+        "origin": "seed",
+        "category": "Router & Hardware",
+        "product": "Router/Modem",
+        "snippet": "Coverage problems are solved by channel selection, router placement and extenders. Procedure: 1. Check the Wi-Fi channel utilisation and switch to the least congested channel. 2. Enable band steering or move devices to 5 GHz close to the ro"
+      }
+    ],
+    "resolution": {
+      "summary": "Based on 7 similar resolved case(s)/article(s) - closest: \"My broadband drops every evening around 8. The light on\" (T1, 100% match).",
+      "steps": [
+        {
+          "n": 1,
+          "text": "Check the ONT/fibre terminal for a red LOS light and note the optical power level in the line diagnostics.",
+          "citations": [
+            "T1",
+            "T2"
+          ]
+        },
+        {
+          "n": 2,
+          "text": "Run a 24-hour line stability test from the provisioning portal to look for evening packet loss and re-syncs.",
+          "citations": [
+            "T1",
+            "T2"
+          ]
+        },
+        {
+          "n": 3,
+          "text": "Check for congestion on the customer's GPON port and node during 19:00-23:00.",
+          "citations": [
+            "T1",
+            "T2"
+          ]
+        },
+        {
+          "n": 4,
+          "text": "Move the customer to a less loaded port or raise a network capacity ticket if utilisation is above 85%.",
+          "citations": [
+            "T1",
+            "T2"
+          ]
+        },
+        {
+          "n": 5,
+          "text": "Replace the patch cable and re-seat the fibre connector if optical power is outside -8 to -27 dBm.",
+          "citations": [
+            "K1",
+            "T1",
+            "T2"
+          ]
+        },
+        {
+          "n": 6,
+          "text": "Call back after 48 hours to confirm the drops have stopped.",
+          "citations": [
+            "K1",
+            "T2"
+          ]
+        },
+        {
+          "n": 7,
+          "text": "Check for a known area outage or planned maintenance on the network status dashboard.",
+          "citations": [
+            "T4"
+          ]
+        }
+      ],
+      "escalate": false,
+      "escalation_reason": null,
+      "priority_flag": true,
+      "grounding_score": 1.0,
+      "generation_mode": "extractive"
+    },
+    "confidence": {
+      "score": 0.475,
+      "level": "medium",
+      "agreement": 0.576,
+      "similarity": 0.4501,
+      "relevance": 1.0,
+      "reasons": [
+        "3 of the 5 closest cases prescribe the same fix (agreement 58%)."
+      ],
+      "clarifying_questions": [],
+      "source_ids": [
+        "T1",
+        "T2",
+        "T4"
+      ]
+    },
+    "index_version": "support_hashing_v1",
+    "cached": false,
+    "latency_ms": null
+  }
+}
