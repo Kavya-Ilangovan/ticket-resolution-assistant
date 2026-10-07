@@ -8,7 +8,7 @@ services:
       QDRANT_URL: http://qdrant:6333
       CELERY_EAGER: "false"
       EMBEDDING_BACKEND: "${EMBEDDING_BACKEND:-sentence-transformers}"
-      WEB_CONCURRENCY: "2"
+      WEB_CONCURRENCY: "1"
     ports: ["8000:8000"]
     depends_on: { postgres: { condition: service_healthy }, redis: { condition: service_started }, qdrant: { condition: service_started } }
   worker:                       # async ingestion / embedding / re-indexing
@@ -17,12 +17,16 @@ services:
     env_file: .env
     environment: *common
     depends_on: [api, redis, postgres, qdrant]
+    healthcheck:
+      disable: true
   beat:                         # periodic self-healing reconcile of un-indexed rows
     build: { context: ., args: { EMBEDDINGS: "${EMBEDDINGS:-real}" } }
     command: celery -A app.worker.celery_app.celery_app beat -l info
     env_file: .env
     environment: *common
     depends_on: [redis]
+    healthcheck:
+      disable: true
   postgres:
     image: postgres:16-alpine
     environment: { POSTGRES_USER: tra, POSTGRES_PASSWORD: tra, POSTGRES_DB: tra }
