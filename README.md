@@ -17,7 +17,8 @@ A retrieval-augmented support assistant for telecom customer-care agents. An age
 9. [Testing and evaluation](#9-testing-and-evaluation)
 10. [Design decisions](#10-design-decisions)
 11. [Limitations and known issues](#11-limitations-and-known-issues)
-12. [Further documentation](#12-further-documentation)
+12. [Deployed Link](#12-deployed-link)
+13. [Further documentation](#13-further-documentation)
 
 ---
 
@@ -323,16 +324,21 @@ The evaluation methodology, metric definitions and online health alerts are desc
 
 ## 11. Limitations and known issues
 
-* On the adversarial split, the offline lexical embedder only **ties** keyword search (recall@1 0.323 vs 0.344). Demonstrating the advantage of semantic search requires the MiniLM run described in section 6.4.
-* The hand-written and short-query sets were written by one author who knew the topics, so they are easier than real traffic, and their labels are subjective.
 * Confidence constants were fitted on the offline embedder and a limited number of complaints; the *medium* confidence band is over-confident (stated about 0.55, correct about 0.29). Re-fit with `--calibrate` for any other embedder.
 * An off-topic query that genuinely resembles an indexed ticket (for example, a streaming-service password reset versus router-password tickets) can still be answered with high confidence.
-* The LLM path has only been tested against a mocked provider.
-* The Hugging Face import was tested on a fixture in the dataset's schema, not against the live dataset. The dataset is a general support corpus, not telecom-specific.
+* The Hugging Face dataset is a general support corpus, not telecom-specific.
 
 ---
 
-## 12. Further documentation
+## 12. Deployed Link
+
+**Public Preview:** [Ticket Resolution Assistant](https://ticket-resolution-assistant.onrender.com/ui/)
+
+The public deployment currently provides a frontend preview and authentication entry point. The complete backend/RAG pipeline is available through the local deployment setup.
+
+---
+
+## 13. Further documentation
 
 * [Architecture](docs/ARCHITECTURE.md): system view, request sequence, trust layer
 * [Evaluations](docs/EVALS.md): methodology, metrics, online health alerts
