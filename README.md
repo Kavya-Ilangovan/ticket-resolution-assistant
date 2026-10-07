@@ -12,13 +12,12 @@ A retrieval-augmented support assistant for telecom customer-care agents. An age
 4. [Technology stack](#4-technology-stack)
 5. [Repository structure](#5-repository-structure)
 6. [Getting started](#6-getting-started)
-7. [Configuration](#7-configuration)
-8. [API reference](#8-api-reference)
-9. [Testing and evaluation](#9-testing-and-evaluation)
-10. [Design decisions](#10-design-decisions)
-11. [Limitations and known issues](#11-limitations-and-known-issues)
-12. [Deployed Link](#12-deployed-link)
-13. [Further documentation](#13-further-documentation)
+7. [API reference](#7-api-reference)
+8. [Testing and evaluation](#8-testing-and-evaluation)
+9. [Design decisions](#9-design-decisions)
+10. [Limitations and known issues](#10-limitations-and-known-issues)
+11. [Deployed Link](#11-deployed-link)
+12. [Further documentation](#12-further-documentation)
 
 ---
 
@@ -95,7 +94,7 @@ Full diagrams, including the `/v1/resolve` sequence, are in [`docs/ARCHITECTURE.
 | Relational store | PostgreSQL via SQLAlchemy 2 (SQLite for local runs) |
 | Vector store | Qdrant (embedded mode for local runs) |
 | Embeddings | `sentence-transformers/all-MiniLM-L6-v2`, or an offline hashing embedder (no download) |
-| LLM (optional) | OpenRouter (`gpt-4o-mini`, fallback `claude-3.5-haiku`) |
+| LLM | OpenRouter (`gpt-4o-mini`, fallback `claude-3.5-haiku`) |
 | Background jobs | Celery + Redis (eager mode locally) |
 | Auth / RBAC | Firebase Authentication (Google, email/password); PyJWT dev tokens for local use |
 | Frontend | Plain JavaScript SPA, no build step |
@@ -214,7 +213,7 @@ This adds the public [`Tobi-Bueck/customer-support-tickets`](https://huggingface
 
 ### 6.6 Optional: Google sign-in (Firebase)
 
-Create a Firebase project, enable the Google provider, and add the web-app values to a `.env` file (one value per line, no quotes):
+Create a Firebase project, enable the Google provider, and add the web-app values to a `.env` file:
 
 ```
 FIREBASE_API_KEY=...
@@ -223,31 +222,11 @@ ADMIN_EMAILS=you@company.com
 ALLOWED_EMAIL_DOMAINS=company.com
 ```
 
-Restart the server; the console reports either `Google sign-in enabled` or the reason it is disabled. Roles: a Firebase `role` claim wins; otherwise a verified email in `ADMIN_EMAILS` is **admin**; everyone else is **agent**.
+Roles: a Firebase `role` claim wins; otherwise a verified email in `ADMIN_EMAILS` is **admin**; everyone else is **agent**.
 
 ---
 
-## 7. Configuration
-
-All settings are environment variables (or a `.env` file). The full annotated list is in [`.env.example`](.env.example).
-
-| Variable | Default | Description |
-|---|---|---|
-| `APP_ENV` | `dev` | `dev`, `test` or `prod` (`prod` refuses `AUTH_MODE=off`) |
-| `AUTH_MODE` | `jwt` | `jwt` (dev/CI), `firebase` (production), `off` |
-| `DATABASE_URL` | `sqlite:///./local.db` | Production: `postgresql+psycopg2://...` |
-| `QDRANT_URL` | `:memory:` | `path:./.qdrant` (embedded, persistent) or `http://qdrant:6333` |
-| `REDIS_URL` | none | Cache, rate limiting and Celery broker |
-| `EMBEDDING_BACKEND` | `hashing` (`sentence-transformers` in Docker) | Embedding implementation |
-| `OPENROUTER_API_KEY` | empty | Empty means extractive (still cited) drafting |
-| `LLM_MODEL` / `LLM_FALLBACK_MODEL` | `openai/gpt-4o-mini` / `anthropic/claude-3.5-haiku` | Primary and fallback LLM |
-| `ADMIN_EMAILS` / `ALLOWED_EMAIL_DOMAINS` | empty | Role assignment and sign-in restriction |
-| `REDACT_PII` | `true` | Redact personal data before storage and LLM calls |
-| `RATE_LIMIT_PER_MINUTE` | `60` | Per-user request limit |
-
----
-
-## 8. API reference
+## 7. API reference
 
 Authenticated with a bearer token; roles are `agent` and `admin`. Interactive documentation is served at `/docs`.
 
@@ -266,9 +245,9 @@ Authenticated with a bearer token; roles are `agent` and `admin`. Interactive do
 
 ---
 
-## 9. Testing and evaluation
+## 8. Testing and evaluation
 
-### 9.1 Commands
+### 8.1 Commands
 
 ```bash
 pytest -q                                   # unit, integration and API tests
@@ -284,9 +263,9 @@ UI tests (Node.js, jsdom, against a running server):
 cd frontend/tests && npm install && node smoke.cjs http://localhost:8000
 ```
 
-Generated outputs (`evals/reports/report.md`, `docs/EXPLORATION.md`, `docs/img/`, `data/synthetic/`) are produced by these commands and are not committed.
+Generated outputs (`evals/reports/report.md`, `docs/EXPLORATION.md`, `docs/img/`, `data/synthetic/`) are produced by these commands.
 
-### 9.2 Results
+### 8.2 Results
 
 Measured on a clean run with the offline `hashing` embedder: **47 of 47 tests pass; 36 of 36 evaluation quality gates pass.**
 
@@ -320,7 +299,7 @@ The evaluation methodology, metric definitions and online health alerts are desc
 
 ---
 
-## 10. Design decisions
+## 9. Design decisions
 
 * **Category by kNN over resolved tickets, not a trained classifier.** A new class works as soon as a few seed tickets are indexed; adding classes needs no retraining.
 * **"Unknown" requires similarity and agreement.** A complaint is treated as a known class if it is clearly similar, or weakly similar with at least 65% of the neighbour vote on one class. This raised hand-written category accuracy from 0.61 to 0.83 without hurting novel-class detection.
@@ -332,7 +311,7 @@ The evaluation methodology, metric definitions and online health alerts are desc
 
 ---
 
-## 11. Limitations and known issues
+## 10. Limitations and known issues
 
 * Confidence constants were fitted on the offline embedder and a limited number of complaints; the *medium* confidence band remains less reliable than the high-confidence band (stated about 0.56, correct about 0.35). Re-fit with `--calibrate` for any other embedder.
 * An off-topic query that genuinely resembles an indexed ticket (for example, a streaming-service password reset versus router-password tickets) can still be answered with high confidence.
@@ -340,7 +319,7 @@ The evaluation methodology, metric definitions and online health alerts are desc
 
 ---
 
-## 12. Deployed Link
+## 11. Deployed Link
 
 **Public Preview:** [Ticket Resolution Assistant](https://ticket-resolution-assistant.onrender.com/ui/)
 
@@ -348,8 +327,7 @@ The public deployment currently provides a frontend preview and authentication e
 
 ---
 
-## 13. Further documentation
+## 12. Further documentation
 
 * [Architecture](docs/ARCHITECTURE.md): system view, request sequence, trust layer
 * [Evaluations](docs/EVALS.md): methodology, metrics, online health alerts
-* [Production considerations](docs/PRODUCTION.md): scaling, security, operations
