@@ -1,8 +1,12 @@
-"""Synthetic support data: tickets, KB articles, held-out eval queries and a novel class.
+"""Synthetic telecom support data (tickets, KB articles, held-out eval queries, a *novel* class).
 
-Every ticket carries an `issue_key` (the canonical problem), so retrieval relevance is "same issue_key".
-The last two symptom phrasings of each issue are used only for eval queries, never for corpus tickets.
-Run: python -m data.generate_synthetic
+Why synthetic?  The public datasets are not telecom-specific and carry no ground-truth "same underlying
+problem" relation, which retrieval evals need.  Here every ticket has an `issue_key` (the canonical
+problem), so retrieval relevance = "same issue_key".  Customer wording is deliberately varied so keyword
+overlap is low (the exact failure of keyword search the brief describes).  The last two symptom phrasings
+of every issue are NEVER used for corpus tickets - only for eval queries (unseen paraphrases).
+
+Run:  python -m data.generate_synthetic
 """
 from __future__ import annotations
 
@@ -15,12 +19,9 @@ from data.issue_catalog import DETAILS, ISSUES, NOVEL_ISSUES
 OUT = Path(__file__).parent / "synthetic"
 
 # ------------------------------------------------------------------ complaint composition
-ATTEMPTS = ["I've already tried the basic steps you suggested.", "I did everything I could think of on my side.",
-            "I tried again several times and it didn't help.", "I already contacted you about this once.", "", "", ""]
-DEVICE_ATTEMPTS = ["I've already restarted the device twice.", "I rebooted everything and it didn't help.",
-                   "I tried switching it off and on several times."]
-DEVICE_CATEGORIES = {"Broadband Connectivity", "Router & Hardware", "TV & Streaming", "Mobile Network & Coverage",
-                     "Voice & Messaging", "Device & eSIM"}
+ATTEMPTS = ["I've already restarted the router twice.", "I rebooted everything already and it didn't help.",
+            "I tried switching it off and on several times.", "I already did the basic reset you suggested.",
+            "I've tried everything I can think of.", "", "", ""]
 IMPACT = ["I work from home and this is costing me.", "I have client calls all day and this is hurting my business.",
           "My kids' online classes are affected.", "I'm losing money every day this continues.",
           "This is urgent, I have a deadline tomorrow."]
@@ -44,7 +45,7 @@ def compose(rng: random.Random, issue: dict, symptom: str, split: str = "train")
     if rng.random() < .75:
         parts.append(DETAILS[issue["key"]][0 if split == "train" else 1])  # test queries use unseen wording
     if rng.random() < .5:
-        a = rng.choice(ATTEMPTS + (DEVICE_ATTEMPTS if issue["cat"] in DEVICE_CATEGORIES else []))
+        a = rng.choice(ATTEMPTS)
         if a:
             parts.append(a)
             score += .5
@@ -85,9 +86,8 @@ def build(seed: int = 7, per_issue: int = 22, queries_per_issue: int = 4) -> Non
 
     def make(issues, tickets_out, queries_out, n_tickets, n_queries, prefix):
         for issue in issues:
-            n_tickets_issue = n_tickets if prefix == "nov" else rng.randint(n_tickets - 6, n_tickets + 6)
             train_sym, test_sym = issue["symptoms"][:5], issue["symptoms"][5:]
-            for i in range(n_tickets_issue):
+            for i in range(n_tickets):
                 c = compose(rng, issue, rng.choice(train_sym))
                 tickets_out.append({
                     "external_id": f"{prefix}-{issue['key']}-{i:03d}", "subject": "", "body": c["text"],

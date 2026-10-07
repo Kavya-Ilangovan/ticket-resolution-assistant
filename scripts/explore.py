@@ -25,7 +25,7 @@ IMG = DOCS / "img"
 
 def main():
     IMG.mkdir(parents=True, exist_ok=True)
-    tickets, queries, kb_rows = read("tickets"), read("eval_queries"), read("kb")
+    tickets, queries = read("tickets"), read("eval_queries")
     cats = collections.Counter(t["category"] for t in tickets)
     sev = collections.defaultdict(collections.Counter)
     for t in tickets:
@@ -77,7 +77,7 @@ def main():
     md = f"""# Exploration (EDA)
 
 Data: **{len(tickets)}** synthetic resolved tickets, **{len(set(t['issue_key'] for t in tickets))}** underlying issues,
-**{len(cats)}** categories, {len(kb_rows)} KB articles, {len(queries)} held-out eval complaints, 8 out-of-domain probes and a
+**{len(cats)}** categories, 24 KB articles, {len(queries)} held-out eval complaints, 8 out-of-domain probes and a
 held-out *unseen* class ("5G Home Internet"). 
 
 **How the data is built** (`data/generate_synthetic.py`, seeded). The public datasets are not telecom-specific and have no

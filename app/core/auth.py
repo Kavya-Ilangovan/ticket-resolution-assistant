@@ -1,8 +1,11 @@
-"""Authentication and RBAC.
+"""Authentication & RBAC.
 
-AUTH_MODE=firebase  verify Firebase ID tokens; role from the `role` claim, else ADMIN_EMAILS, else DEFAULT_ROLE
-AUTH_MODE=jwt       HS256 tokens signed with JWT_SECRET (dev/CI); Google sign-in also works if Firebase is configured
-AUTH_MODE=off       no auth, everyone is admin (refused when APP_ENV=prod)
+AUTH_MODE=firebase : verify Firebase ID tokens (Google sign-in and email/password) with firebase-admin. Role: custom claim
+                     `role` if set, else ADMIN_EMAILS (verified email) -> admin, else DEFAULT_ROLE (agent).
+                     ALLOWED_EMAIL_DOMAINS optionally restricts who may sign in at all.
+AUTH_MODE=jwt      : HS256 tokens signed with JWT_SECRET (local dev / CI; /v1/auth/dev-token mints them). If Firebase is
+                     also configured, Google sign-in works side by side with the dev login (handy for demos).
+AUTH_MODE=off      : no auth, everyone is an admin (refused when APP_ENV=prod).
 """
 from __future__ import annotations
 

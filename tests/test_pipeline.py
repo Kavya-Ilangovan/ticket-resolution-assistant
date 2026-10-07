@@ -64,7 +64,7 @@ def test_novel_class_learned_without_retraining(ctx, db):
     ingestion.ingest_tickets(ctx, db, [TicketIn(**r) for r in read("novel_tickets")])
     ingestion.ingest_kb(ctx, db, [KBArticleIn(**r) for r in read("novel_kb")])
     hits = sum(resolver.resolve(ctx, db, q["text"], "u", use_cache=False).analysis.category == "5G Home Internet" for q in novel)
-    assert hits / len(novel) > 0.2   # the offline embedder is lexical; evals report the semantic figure
+    assert hits / len(novel) > 0.3
 
 
 # ---- LLM path against a mocked OpenRouter
@@ -111,12 +111,3 @@ def test_circuit_breaker_opens(seeded):
         with pytest.raises(LLMUnavailable):
             ctx.llm.chat([{"role": "user", "content": "hi"}])
     assert len(calls) == ctx.llm.BREAKER_THRESHOLD       # later calls short-circuit
-
-
-def test_llm_judge_scores_supported_steps(seeded, db):
-    from evals.llm_judge import judge
-    out = resolver.resolve(seeded, db, Q, "u", use_cache=False)
-    ctx = _llm(seeded, lambda req: _reply({"supported": [1, 0] + [1] * 10, "addresses_complaint": 4}))
-    res = judge(ctx, Q, out)
-    n = len(out.resolution.steps)
-    assert res["addresses_complaint"] == 4.0 and 0.0 < res["faithfulness"] <= 1.0 and n >= 2

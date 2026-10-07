@@ -41,7 +41,7 @@ def test_relevance_scale_is_zero_at_the_floor_and_one_when_strong(settings):
 def test_wifi_not_working_is_on_topic_and_flagged_uncertain(seeded, db):
     out = resolver.resolve(seeded, db, "wifi not working", "t", use_cache=False)
     assert not {s.category for s in out.sources} & OFF_TOPIC_FOR_WIFI          # no billing/SIM/TV results
-    assert out.confidence.level != "high"                                       # a vague complaint must not look certain
+    assert out.confidence.level == "low" and out.confidence.clarifying_questions  # the cases disagree, so it asks
     assert all(0.0 <= s.relevance <= 1.0 for s in out.sources)
 
 
@@ -125,15 +125,6 @@ def test_hf_columns_are_matched_by_alias_and_missing_columns_explained(tmp_path)
     assert plan.report["tickets"] == 1 and plan.report["columns"]["queue"] == "Department"
     with pytest.raises(ValueError, match="Could not find required column"):
         hf_import.build_plan([{"foo": "bar"}])
-
-
-def test_hf_plan_queue_filter_and_repeated_answers():
-    rows = [{"subject": f"Issue {i}", "body": f"The service keeps failing on device number {i} after the update was installed",
-             "answer": "Restart the application service from the admin console. Clear the local cache directory completely.",
-             "queue": "Technical Support" if i < 5 else "Human Resources", "language": "English", "priority": "low"} for i in range(8)]
-    plan = hf_import.build_plan(rows, queues=["technical support"], kb_limit=0, max_same_answer=2)
-    assert plan.report["tickets"] == 2
-    assert plan.report["dropped"] == {"queue_filtered": 3, "repeated_answer": 3}
 
 
 def test_imported_hf_knowledge_is_retrievable_and_labelled(seeded, db):

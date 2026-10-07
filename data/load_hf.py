@@ -1,12 +1,13 @@
-"""Load a public Hugging Face support-ticket dataset (tickets and derived KB articles) into the knowledge base.
+"""Load the public Hugging Face support-ticket dataset into the knowledge base (tickets AND KB articles).
 
-    pip install datasets
-    python -m data.load_hf --dry-run                   # show detected columns and what would be imported
-    python -m data.load_hf                             # import (queues chosen by the domain profile)
-    python -m data.load_hf --queues all --limit 10000
-    python -m data.load_hf --csv path/to/file.csv      # a downloaded file instead of the hub
+    pip install datasets                       # only needed for this loader
+    python -m data.load_hf                     # 3000 English tickets + up to 300 derived KB articles
+    python -m data.load_hf --limit 10000 --kb-limit 600
+    python -m data.load_hf --csv C:\\data\\tickets.csv    # a file you downloaded yourself (no `datasets`, no network)
+    python -m data.load_hf --dry-run           # show what would be imported (and the detected columns), import nothing
 
-Re-running is idempotent. Cleaning and mapping rules live in app/services/hf_import.py.
+Idempotent: running it again skips unchanged rows. Imported documents are tagged origin="hf" in the UI/API.
+The mapping and cleaning rules live in app/services/hf_import.py (unit-tested on a fixture in the HF schema).
 """
 from __future__ import annotations
 
@@ -20,7 +21,7 @@ os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")   # Windows: avoid
 from app.config import get_settings  # noqa: E402
 from app.core.context import get_context  # noqa: E402
 from app.db.session import init_engine, session_scope  # noqa: E402
-from app.services import hf_import, lexicons  # noqa: E402
+from app.services import hf_import  # noqa: E402
 
 
 def main() -> int:
@@ -30,22 +31,15 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=3000, help="max tickets to import (0 = all)")
     ap.add_argument("--kb-limit", type=int, default=300, help="max KB articles to derive (0 = none)")
     ap.add_argument("--lang", default="en", help="language filter, '' for all")
-    ap.add_argument("--queues", default=None, help="comma-separated queues to keep, or 'all' (default: the domain profile's list)")
     ap.add_argument("--per-queue", type=int, default=None, help="cap tickets per queue/department (balance the corpus)")
     ap.add_argument("--repo", default=hf_import.REPO, help="Hugging Face dataset id")
     ap.add_argument("--csv", default=None, help="local .csv/.jsonl/.json file instead of downloading")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
 
-    if a.queues == "all":
-        queues = None
-    elif a.queues:
-        queues = [q.strip() for q in a.queues.split(",") if q.strip()]
-    else:
-        queues = list(lexicons.load_domain(get_settings().domain_profile).hf_queues) or None
     try:
         plan = hf_import.build_plan(hf_import.iter_rows(a.repo, a.csv), lang=a.lang or None, limit=a.limit or None,
-                                    kb_limit=a.kb_limit, per_queue=a.per_queue, queues=queues)
+                                    kb_limit=a.kb_limit, per_queue=a.per_queue)
     except Exception as e:  # noqa: BLE001 - show a readable message, not a stack trace, for the usual problems
         print(f"Could not load the dataset: {e}", file=sys.stderr)
         return 1

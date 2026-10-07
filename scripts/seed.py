@@ -21,6 +21,9 @@ DATA = Path(__file__).resolve().parent.parent / "data"
 def read(name: str, folder: str = "synthetic") -> list[dict]:
     """Read data/<folder>/<name>.jsonl (UTF-8 explicitly: Windows defaults to cp1252)."""
     path = DATA / folder / f"{name}.jsonl"
+    if not path.exists() and folder == "synthetic":
+        from data.generate_synthetic import build  # deterministic (seeded): regenerate instead of failing on a fresh checkout
+        build()
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 

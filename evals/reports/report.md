@@ -1,13 +1,13 @@
-# Eval report (hashing, 144 held-out complaints)
+# Eval report (hashing, 96 held-out complaints)
 
 ## Retrieval (relevant = same underlying issue)
 
 | metric | dense | hybrid (used) | keyword baseline |
 |---|---|---|---|
-| recall@1 | 0.264 | 0.285 | 0.306 |
-| recall@5 | 0.444 | 0.562 | 0.542 |
-| mrr | 0.353 | 0.404 | 0.4 |
-| ndcg@5 | 0.215 | 0.275 | 0.306 |
+| recall@1 | 0.281 | 0.323 | 0.344 |
+| recall@5 | 0.552 | 0.604 | 0.562 |
+| mrr | 0.394 | 0.44 | 0.445 |
+| ndcg@5 | 0.267 | 0.312 | 0.349 |
 
 ## Short / vague complaints (29, e.g. 'wifi not working')
 
@@ -17,12 +17,12 @@ What the agent *sees* must be on topic. `off_topic_free` = share of queries with
 
 | metric | value |
 |---|---|
-| precision@5 | 0.737 |
+| precision@5 | 0.739 |
 | top1 | 0.862 |
 | off_topic_free | 0.862 |
-| avg_sources_shown | 5.897 |
+| avg_sources_shown | 6.207 |
 
-## Are the confidence scores honest? (204 complaints)
+## Are the confidence scores honest? (132 complaints)
 
 Match confidence = probability that the leading fix group is the right issue. Calibration error (ECE) is the average gap between stated confidence and observed accuracy.
 
@@ -30,10 +30,10 @@ Match confidence = probability that the leading fix group is the right issue. Ca
 
 | metric | value |
 |---|---|
-| match_ece | 0.059 |
-| category_ece | 0.075 |
-| high_conf_precision | 0.77 |
-| low_conf_precision | 0.2 |
+| match_ece | 0.06 |
+| category_ece | 0.041 |
+| high_conf_precision | 0.92 |
+| low_conf_precision | 0.19 |
 | monotonic | True |
 | ood_mean_confidence | 0.195 |
 
@@ -50,96 +50,96 @@ Free-text answers (same fix worded differently vs genuinely different fixes):
 
 | stated confidence | n | mean stated | actually right |
 |---|---|---|---|
-| 0.0-0.4 | 96 | 0.26 | 0.2 |
-| 0.4-0.7 | 34 | 0.52 | 0.56 |
-| 0.7-1.0 | 74 | 0.86 | 0.77 |
+| 0.0-0.4 | 59 | 0.26 | 0.19 |
+| 0.4-0.7 | 23 | 0.56 | 0.35 |
+| 0.7-1.0 | 50 | 0.87 | 0.92 |
 
 **Category confidence vs correctness of the category (known classes only)**
 
 | stated confidence | n | mean stated | actually right |
 |---|---|---|---|
-| 0.0-0.4 | 76 | 0.2 | 0.3 |
-| 0.4-0.7 | 32 | 0.52 | 0.41 |
-| 0.7-1.0 | 71 | 0.92 | 0.92 |
+| 0.0-0.4 | 39 | 0.26 | 0.28 |
+| 0.4-0.7 | 27 | 0.56 | 0.48 |
+| 0.7-1.0 | 57 | 0.92 | 0.93 |
 
 
-## Hand-written complaints (60, not template-generated)
+## Hand-written complaints (36, not template-generated)
 
 | metric | dense | hybrid (used) | keyword baseline |
 |---|---|---|---|
-| recall@1 | 0.783 | 0.8 | 0.783 |
-| recall@5 | 0.95 | 0.933 | 0.917 |
-| mrr | 0.842 | 0.858 | 0.837 |
-| ndcg@5 | 0.725 | 0.796 | 0.746 |
+| recall@1 | 0.861 | 0.861 | 0.861 |
+| recall@5 | 0.972 | 0.972 | 0.917 |
+| mrr | 0.912 | 0.903 | 0.886 |
+| ndcg@5 | 0.809 | 0.845 | 0.803 |
 
 ## Hand-written: parsing and KB
 
 | metric | value |
 |---|---|
-| kb_recall@3 | 0.817 |
-| category_acc | 0.783 |
-| product_acc | 0.933 |
-| severity_within1 | 0.883 |
-| sentiment_acc | 0.683 |
-| step_precision | 0.793 |
-| gold_step_recall | 0.842 |
+| kb_recall@3 | 0.861 |
+| category_acc | 0.861 |
+| product_acc | 0.917 |
+| severity_within1 | 0.861 |
+| sentiment_acc | 0.667 |
+| step_precision | 0.821 |
+| gold_step_recall | 0.883 |
 
 ## Parsing, RAG, abstention, evolving classes, latency
 
 | metric | value |
 |---|---|
-| kb_recall@3 | 0.743 |
-| category_acc | 0.375 |
-| category_macro_f1 | 0.365 |
-| product_acc | 0.569 |
-| severity_acc | 0.396 |
-| severity_within1 | 0.944 |
-| sentiment_acc | 0.771 |
+| kb_recall@3 | 0.75 |
+| category_acc | 0.479 |
+| category_macro_f1 | 0.434 |
+| product_acc | 0.552 |
+| severity_acc | 0.417 |
+| severity_within1 | 0.938 |
+| sentiment_acc | 0.729 |
 | citation_validity | 1.0 |
-| mean_grounding | 0.979 |
-| step_precision | 0.329 |
-| gold_step_recall | 0.347 |
-| escalated_in_domain | 0.021 |
+| mean_grounding | 1.0 |
+| step_precision | 0.338 |
+| gold_step_recall | 0.362 |
+| escalated_in_domain | 0.0 |
 | ood_escalated | 0.875 |
 | novel_flagged_before | 0.167 |
 | emerging_clusters | 0 |
-| novel_after_acc | 0.222 |
-| base_acc_before | 0.417 |
-| base_acc_after | 0.396 |
-| seconds_to_learn | 0.09 |
-| p50_ms | 47.2 |
-| p95_ms | 55.7 |
-| throughput_rps_1thread | 20.5 |
+| novel_after_acc | 0.333 |
+| base_acc_before | 0.396 |
+| base_acc_after | 0.375 |
+| seconds_to_learn | 0.14 |
+| p50_ms | 70.7 |
+| p95_ms | 93.0 |
+| throughput_rps_1thread | 13.6 |
 
 ## Gates
 
 | gate | value | threshold | |
 |---|---|---|---|
-| hybrid.recall@5 | 0.562 | 0.42 | PASS |
-| hybrid.mrr | 0.404 | 0.35 | PASS |
-| kb_recall@3 | 0.743 | 0.6 | PASS |
-| category_acc | 0.375 | 0.33 | PASS |
-| product_acc | 0.569 | 0.48 | PASS |
-| sentiment_acc | 0.771 | 0.6 | PASS |
+| hybrid.recall@5 | 0.604 | 0.42 | PASS |
+| hybrid.mrr | 0.44 | 0.35 | PASS |
+| kb_recall@3 | 0.75 | 0.6 | PASS |
+| category_acc | 0.479 | 0.38 | PASS |
+| product_acc | 0.552 | 0.48 | PASS |
+| sentiment_acc | 0.729 | 0.6 | PASS |
 | citation_validity | 1.0 | 1.0 | PASS |
-| step_precision | 0.329 | 0.25 | PASS |
-| gold_step_recall | 0.347 | 0.3 | PASS |
+| step_precision | 0.338 | 0.25 | PASS |
+| gold_step_recall | 0.362 | 0.3 | PASS |
 | ood_escalated | 0.875 | 0.75 | PASS |
-| novel_after_acc | 0.222 | 0.2 | PASS |
-| p95_ms | 55.7 | 500 | PASS |
-| hand.hybrid.recall@5 | 0.933 | 0.9 | PASS |
-| hand.hybrid.mrr | 0.858 | 0.85 | PASS |
-| hand.kb_recall@3 | 0.817 | 0.8 | PASS |
-| hand.category_acc | 0.783 | 0.75 | PASS |
-| hand.product_acc | 0.933 | 0.85 | PASS |
-| hand.step_precision | 0.793 | 0.65 | PASS |
-| hand.gold_step_recall | 0.842 | 0.75 | PASS |
-| short.precision@5 | 0.737 | 0.7 | PASS |
+| novel_after_acc | 0.333 | 0.25 | PASS |
+| p95_ms | 93.0 | 500 | PASS |
+| hand.hybrid.recall@5 | 0.972 | 0.9 | PASS |
+| hand.hybrid.mrr | 0.903 | 0.85 | PASS |
+| hand.kb_recall@3 | 0.861 | 0.8 | PASS |
+| hand.category_acc | 0.861 | 0.75 | PASS |
+| hand.product_acc | 0.917 | 0.85 | PASS |
+| hand.step_precision | 0.821 | 0.65 | PASS |
+| hand.gold_step_recall | 0.883 | 0.75 | PASS |
+| short.precision@5 | 0.739 | 0.7 | PASS |
 | short.top1 | 0.862 | 0.8 | PASS |
 | short.off_topic_free | 0.862 | 0.8 | PASS |
-| calib.match_ece | 0.059 | 0.12 | PASS |
-| calib.category_ece | 0.075 | 0.1 | PASS |
-| calib.high_conf_precision | 0.77 | 0.75 | PASS |
+| calib.match_ece | 0.06 | 0.12 | PASS |
+| calib.category_ece | 0.041 | 0.1 | PASS |
+| calib.high_conf_precision | 0.92 | 0.8 | PASS |
 | calib.ood_mean_confidence | 0.195 | 0.2 | PASS |
 | freetext.same_fix_agreement | 0.688 | 0.6 | PASS |
 | freetext.different_fix_agreement | 0.25 | 0.35 | PASS |

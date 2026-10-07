@@ -22,7 +22,8 @@ def record_feedback(ctx: Context, db: Session, fb: FeedbackIn, user_id: str) -> 
     m.FEEDBACK.labels(str(fb.helpful).lower()).inc()
     promoted = None
     if fb.resolved_steps:
-        # agent solved it: promote complaint + steps to a resolved ticket (category = correction, else predicted)
+        # Agent solved it (possibly differently): promote complaint + steps to a resolved ticket so the
+        # system learns from it immediately. Category = agent's correction if given, else predicted.
         cat = fb.correct_category or (q.category if q.is_known else None)
         if cat:
             cat = taxonomy.ensure_category(db, cat, created_by=user_id)

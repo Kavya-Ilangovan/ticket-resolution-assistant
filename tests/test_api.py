@@ -84,5 +84,5 @@ def test_seed_demo_and_jobs_list(client, admin_h, agent_h):
     assert client.post("/v1/admin/seed-demo", headers=agent_h).status_code == 403
     j = client.post("/v1/admin/seed-demo", headers=admin_h).json()
     assert client.get(f"/v1/jobs/{j['job_id']}", headers=admin_h).json()["status"] == "done"
-    assert client.get("/v1/admin/stats", headers=admin_h).json()["tickets_db"] == sum(1 for _ in open("data/synthetic/tickets.jsonl"))
+    assert client.get("/v1/admin/stats", headers=admin_h).json()["tickets_db"] == 528
     assert client.get("/v1/admin/jobs", headers=admin_h).json()[0]["kind"] == "seed_demo"

@@ -20,7 +20,6 @@ from sklearn.metrics import f1_score
 
 from app.config import Settings
 from app.core.context import build_context, set_context
-from app.core.reranker import load_reranker, rerank_hits
 from app.core.text import jaccard
 from app.db.models import QueryLog
 from app.db.session import init_engine, session_scope
@@ -32,16 +31,17 @@ REPORTS = Path(__file__).parent / "reports"   # one report per embedding backend
 SEV = ["low", "medium", "high", "critical"]
 MODELS = {"sentence-transformers": "sentence-transformers/all-MiniLM-L6-v2", "hashing": "hashing"}
 
-# hashing: regression floors (measured minus a margin) for the offline lexical embedder.
-# sentence-transformers: quality gates; hybrid retrieval must beat the keyword baseline by a margin.
+# hashing: regression floors (measured minus a margin) that guard the plumbing, not quality.
+# sentence-transformers: quality gates. The point of the project is that semantic hybrid retrieval BEATS keyword search,
+# so hybrid must win by a margin on both the synthetic held-out split and the hand-written set.
 GATES = {
-    "hashing": {"hybrid.recall@5": 0.42, "hybrid.mrr": 0.35, "kb_recall@3": 0.60, "category_acc": 0.33, "product_acc": 0.48,
+    "hashing": {"hybrid.recall@5": 0.42, "hybrid.mrr": 0.35, "kb_recall@3": 0.60, "category_acc": 0.38, "product_acc": 0.48,
                 "sentiment_acc": 0.60, "citation_validity": 1.0, "step_precision": 0.25, "gold_step_recall": 0.30,
-                "ood_escalated": 0.75, "novel_after_acc": 0.20, "p95_ms": 500,
+                "ood_escalated": 0.75, "novel_after_acc": 0.25, "p95_ms": 500,
                 "hand.hybrid.recall@5": 0.90, "hand.hybrid.mrr": 0.85, "hand.kb_recall@3": 0.80, "hand.category_acc": 0.75,
                 "hand.product_acc": 0.85, "hand.step_precision": 0.65, "hand.gold_step_recall": 0.75,
                 "short.precision@5": 0.70, "short.top1": 0.80, "short.off_topic_free": 0.80,
-                "calib.match_ece": 0.12, "calib.category_ece": 0.10, "calib.high_conf_precision": 0.75,
+                "calib.match_ece": 0.12, "calib.category_ece": 0.10, "calib.high_conf_precision": 0.80,
                 "calib.ood_mean_confidence": 0.20, "freetext.same_fix_agreement": 0.60, "freetext.different_fix_agreement": 0.35},
     "sentence-transformers": {"hybrid_vs_keyword.recall@5": 0.03, "hybrid_vs_keyword.mrr": 0.03,
                               "hand.hybrid_vs_keyword.recall@5": 0.03, "hand.hybrid_vs_keyword.mrr": 0.03,
@@ -77,17 +77,14 @@ def rank_metrics(rows):  # rows: list of boolean relevance lists, best first
             "ndcg@5": avg(ndcg(r) for r in rows)}
 
 
-def retrieval(ctx, db, queries, reranker=None):
+def retrieval(ctx, db, queries):
     info = indexer.get_active(ctx, db)
     rel = {"dense": [], "hybrid": []}
     kb = []
     for q in queries:
-        for mode in ("dense", "hybrid"):
+        for mode in rel:
             hits = retriever.search_hits(ctx, info, q["text"], 10, {"doc_type": "ticket"}, mode)
             rel[mode].append([h.payload["issue_key"] == q["issue_key"] for h in hits])
-            if reranker and mode == "hybrid":
-                reordered = rerank_hits(reranker, q["text"], hits)
-                rel.setdefault("hybrid+rerank", []).append([h.payload["issue_key"] == q["issue_key"] for h in reordered])
         top = retriever.search_hits(ctx, info, q["text"], 3, {"doc_type": "kb"})
         kb.append(any(h.payload["external_id"] == f"kb-{q['issue_key']}" for h in top))
     tickets = read("tickets")  # keyword baseline = today's agent workflow (lexical TF-IDF)
@@ -155,7 +152,7 @@ def lifecycle(ctx, db):
     pre = {x.external_id for x in resolver.search(ctx, db, q, 5, "ticket").results}
     swap = indexer.reindex(ctx, db)
     post = {x.external_id for x in resolver.search(ctx, db, q, 5, "ticket").results}
-    checks["reindex_swaps_and_preserves_results"] = swap["old"] != swap["new"] and len(pre & post) >= 3
+    checks["reindex_swaps_and_preserves_results"] = swap["old"] != swap["new"] and len(pre & post) >= 4
     kb = KBArticleIn(**read("kb")[0])
     kb.version, kb.body = 2, kb.body + "\n\nUpdate: new firmware 3.2 fixes this."
     ingestion.ingest_kb(ctx, db, [kb])
@@ -318,14 +315,13 @@ def main():
     ap.add_argument("--backend", default="hashing", choices=list(MODELS))
     ap.add_argument("--gates", action="store_true", help="exit 1 if a quality gate fails")
     ap.add_argument("--calibrate", action="store_true")
-    ap.add_argument("--rerank", action="store_true", help="also report a cross-encoder reranking arm (needs requirements-ml.txt)")
     a = ap.parse_args()
     ctx, queries = stack(a.backend), read("eval_queries")
     with session_scope() as db:
         seed(ctx, db)
         if a.calibrate:
             return calibrate(ctx, db, queries)
-        ret, kb_recall = retrieval(ctx, db, queries, load_reranker("cross-encoder", ctx.settings.reranker_model) if a.rerank else None)
+        ret, kb_recall = retrieval(ctx, db, queries)
         outs = [resolver.resolve(ctx, db, q["text"], "eval", use_cache=False) for q in queries]
         ood = [resolver.resolve(ctx, db, q["text"], "eval", use_cache=False) for q in read("ood_queries")]
         ts = []
@@ -337,7 +333,7 @@ def main():
         short = short_queries(ctx, db)
         calib = calibration(ctx, db)
         freetext = free_text_agreement(ctx)
-        life = lifecycle(ctx, db)   # last: it edits and retires KB articles
+        life = lifecycle(ctx, db)   # LAST: it edits and retires KB articles, which would skew every metric measured after it
     res = {"kb_recall@3": kb_recall, **parsing(queries, outs), **rag(queries, outs), "ood_escalated": avg(o.resolution.escalate for o in ood),
            **evolving(a.backend, queries), "p50_ms": round(float(np.percentile(ts, 50)), 1), "p95_ms": round(float(np.percentile(ts, 95)), 1),
            "throughput_rps_1thread": round(1000 / statistics.mean(ts), 1)}
@@ -352,9 +348,6 @@ def main():
     md = [f"# Eval report ({a.backend}, {len(queries)} held-out complaints)\n", "## Retrieval (relevant = same underlying issue)\n",
           "| metric | dense | hybrid (used) | keyword baseline |\n|---|---|---|---|"]
     md += [f"| {k} | {ret['dense'][k]} | {ret['hybrid'][k]} | {ret['keyword'][k]} |" for k in ret["dense"]]
-    if "hybrid+rerank" in ret:
-        md += ["", "Cross-encoder reranking of the hybrid top-10:", "", "| metric | hybrid | hybrid + rerank |", "|---|---|---|"]
-        md += [f"| {k} | {ret['hybrid'][k]} | {ret['hybrid+rerank'][k]} |" for k in ret["hybrid"]]
     bins = lambda rows: ["| stated confidence | n | mean stated | actually right |", "|---|---|---|---|"] + [f"| {a} | {n} | {b} | {c} |" for a, n, b, c in rows]  # noqa: E731
     md += ["", f"## Short / vague complaints ({short['n']}, e.g. 'wifi not working')\n",
            "What the agent *sees* must be on topic. `off_topic_free` = share of queries with no result from a forbidden department.\n",
