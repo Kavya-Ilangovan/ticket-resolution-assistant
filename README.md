@@ -325,6 +325,10 @@ The evaluation methodology, metric definitions and online health alerts are desc
 
 The public deployment currently provides a frontend preview and authentication entry point. The complete backend/RAG pipeline is available through the local deployment setup.
 
+Admin credentials:
+* Email:    admin@company.com
+* Password: Admin@12345
+
 ---
 
 ## 12. Further documentation
